@@ -14,8 +14,19 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
+        if (! $request->session()->has('url.intended')) {
+            $previousUrl = url()->previous();
+
+            $isInternal = str_starts_with($previousUrl, url('/'));
+            $isAuthPage = in_array($previousUrl, [route('login'), route('register')], true);
+
+            if ($isInternal && ! $isAuthPage) {
+                $request->session()->put('url.intended', $previousUrl);
+            }
+        }
+
         return view('auth.login');
     }
 
@@ -28,7 +39,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended('/');
     }
 
     /**

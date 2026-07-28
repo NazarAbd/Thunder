@@ -16,7 +16,37 @@
             <a href="{{ route('contact') }}" class="px-3 py-2 rounded-md {{ request()->routeIs('contact') ? 'text-indigo-400 bg-slate-900' : 'text-slate-300 hover:text-white hover:bg-slate-700' }}">اتصل بنا</a>
 
             @auth
-                <span class="px-3 py-2 rounded-md text-slate-300">{{ auth()->user()->name }}</span>
+                <x-dropdown align="right" width="48" content-classes="py-1 bg-white border border-gray-200">
+                    <x-slot name="trigger">
+                        <button class="inline-flex items-center gap-1 px-3 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 focus:outline-none transition">
+                            <span>{{ auth()->user()->name }}</span>
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <x-dropdown-link :href="route('profile.edit')">
+                            <span class="inline-flex items-center gap-2">
+                                <i class="fa-solid fa-user w-4 text-center text-slate-500"></i>
+                                <span>الملف الشخصي</span>
+                            </span>
+                        </x-dropdown-link>
+
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-dropdown-link :href="route('logout')"
+                                    onclick="event.preventDefault();
+                                                this.closest('form').submit();">
+                                <span class="inline-flex items-center gap-2">
+                                    <i class="fa-solid fa-right-from-bracket w-4 text-center text-slate-500"></i>
+                                    <span>تسجيل الخروج</span>
+                                </span>
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
             @else
                 <a href="{{ route('login') }}" class="px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">تسجيل الدخول</a>
             @endauth
@@ -45,8 +75,26 @@
         <a href="{{ route('contact') }}" class="block px-3 py-2 rounded-md {{ request()->routeIs('contact') ? 'text-indigo-400 bg-slate-900' : 'text-slate-300 hover:text-white hover:bg-slate-700' }}">اتصل بنا</a>
 
         @auth
-            <div class="block px-3 py-2 rounded-md text-slate-300 bg-slate-900 border border-slate-700">
-                👤 {{ auth()->user()->name }}
+            <div class="px-3 py-2 rounded-md text-slate-300 bg-slate-900 border border-slate-700 space-y-1">
+                <div class="flex items-center gap-2 px-2 py-2 text-slate-200">
+                    <i class="fa-solid fa-circle-user text-lg"></i>
+                    <span class="font-medium">{{ auth()->user()->name }}</span>
+                </div>
+
+                <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-2 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700">
+                    <i class="fa-solid fa-user w-4 text-center"></i>
+                    <span>الملف الشخصي</span>
+                </a>
+
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <a href="{{ route('logout') }}"
+                        onclick="event.preventDefault(); this.closest('form').submit();"
+                        class="flex items-center gap-2 px-2 py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
+                        <span>تسجيل الخروج</span>
+                    </a>
+                </form>
             </div>
         @else
             <a href="{{ route('login') }}" class="block text-center px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">تسجيل الدخول</a>

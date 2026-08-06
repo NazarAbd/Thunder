@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\TopUpRequests;
 
 use App\Enums\TopUpRequestStatus;
-use App\Filament\Resources\TopUpRequestResource\Pages;
+use App\Filament\Resources\TopUpRequests\Pages;
 use App\Models\TopUpRequest;
 use App\Services\WalletService;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -15,13 +16,10 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use BackedEnum;
 
 class TopUpRequestResource extends Resource
 {
     protected static ?string $model = TopUpRequest::class;
-
-    // protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-library';
 

@@ -3,17 +3,9 @@
 namespace App\Filament\Resources\TopUpRequests\Pages;
 
 use App\Filament\Resources\TopUpRequests\TopUpRequestResource;
-use Filament\Actions\DeleteAction;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ListRecords;
 
-class EditTopUpRequest extends EditRecord
+class ListTopUpRequests extends ListRecords
 {
     protected static string $resource = TopUpRequestResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            DeleteAction::make(),
-        ];
-    }
 }

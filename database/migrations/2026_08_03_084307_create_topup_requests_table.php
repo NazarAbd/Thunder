@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('topup_requests', function (Blueprint $table) {
+        Schema::create('top_up_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('bank_account_id')->constrained()->restrictOnDelete();
@@ -26,6 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('topup_requests');
+        Schema::dropIfExists('top_up_requests');
     }
 };

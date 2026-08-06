@@ -6,7 +6,7 @@ use App\Enums\TopUpRequestStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class TopupRequest extends Model
+class TopUpRequest extends Model
 {
     protected $fillable = [
         'user_id',

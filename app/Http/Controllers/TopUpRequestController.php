@@ -66,7 +66,8 @@ class TopUpRequestController extends Controller
             ->title('طلب شحن محفظة جديد')
             ->body("قدّم {$user->name} طلب شحن بمبلغ " . number_format((float) $topUpRequest->amount, 2) . ' ج.س، بانتظار المراجعة.')
             ->info()
-            ->sendToDatabase($admins);
+            ->sendToDatabase($admins)
+            ->broadcast($admins);
 
         return redirect()->route('wallet.index')
             ->with('status', 'تم إرسال طلب الشحن بنجاح، وسيتم مراجعته من قبل الإدارة قريباً.');

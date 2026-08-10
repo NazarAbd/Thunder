@@ -100,7 +100,8 @@ class TopUpRequestResource extends Resource
                             ->title('تم قبول طلب الشحن')
                             ->body('تم شحن محفظتك بمبلغ ' . number_format((float) $record->amount, 2) . ' ج.س بنجاح.')
                             ->success()
-                            ->sendToDatabase($record->user);
+                            ->sendToDatabase($record->user)
+                            ->broadcast($record->user);
                     }),
 
                 Action::make('reject')
@@ -128,7 +129,8 @@ class TopUpRequestResource extends Resource
                             ->title('تم رفض طلب الشحن')
                             ->body('سبب الرفض: ' . $data['rejection_reason'])
                             ->danger()
-                            ->sendToDatabase($record->user);
+                            ->sendToDatabase($record->user)
+                            ->broadcast($record->user);
                     }),
             ]);
     }

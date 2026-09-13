@@ -6,6 +6,7 @@ use App\Enums\WalletTransactionType;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -33,8 +34,7 @@ class WalletService
         }
 
         return DB::transaction(function () use ($user, $amount, $description, $reference) {
-            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first()
-                ?? Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+            $wallet = $this->lockedWalletFor($user);
 
             $newBalance = bcadd((string) $wallet->balance, (string) $amount, 2);
             $wallet->update(['balance' => $newBalance]);
@@ -83,4 +83,33 @@ class WalletService
             ]);
         });
     }
+
+    /**
+     * Fetch a user's wallet row locked "FOR UPDATE" for the rest of the
+     * enclosing transaction, creating it first if it doesn't exist yet.
+     *
+     * The tricky part: lockForUpdate() only locks rows that already exist.
+     * If a wallet doesn't exist yet (e.g. a seeded user whose UserObserver
+     * never fired because the seeder used WithoutModelEvents), two
+     * concurrent credit() calls could both see "no wallet" and both try to
+     * INSERT one — and the wallets table's unique(user_id) constraint means
+     * one of those inserts fails outright. We catch that specific failure
+     * and simply re-fetch-and-lock the row the other request just created,
+     * instead of letting the whole credit() call error out and roll back.
+     */
+    private function lockedWalletFor(User $user): Wallet
+    {
+        $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+
+        if ($wallet) {
+            return $wallet;
+        }
+
+        try {
+            return Wallet::create(['user_id' => $user->id, 'balance' => 0]);
+        } catch (UniqueConstraintViolationException) {
+            return Wallet::where('user_id', $user->id)->lockForUpdate()->firstOrFail();
+        }
+    }
 }
+resources / views / filament / schemas

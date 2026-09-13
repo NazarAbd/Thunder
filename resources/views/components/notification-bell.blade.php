@@ -16,6 +16,15 @@
         readUrl(id) {
             return '{{ url('notifications') }}/' + id + '/read';
         },
+        markAsRead(notification) {
+            if (notification.read) return;
+            axios.post(this.readUrl(notification.id))
+                .then(() => {
+                    notification.read = true;
+                    if (this.unreadCount > 0) this.unreadCount--;
+                })
+                .catch(() => {});
+        },
         listen() {
             if (this.listening || ! window.Echo) return;
             this.listening = true;
@@ -46,15 +55,13 @@
 
         <x-slot name="content">
             <template x-for="notification in notifications" :key="notification.id">
-                <form method="POST" :action="readUrl(notification.id)">
-                    @csrf
-                    <button type="submit"
-                        class="w-full text-start px-4 py-2 text-sm transition hover:bg-slate-700"
-                        :class="notification.read ? 'text-slate-400' : 'text-white bg-slate-700/40'">
-                        <p class="font-semibold" x-text="notification.title"></p>
-                        <p class="text-xs mt-1 text-slate-400 line-clamp-2" x-show="notification.body" x-text="notification.body"></p>
-                    </button>
-                </form>
+                <button type="button"
+                    @click="markAsRead(notification)"
+                    class="w-full text-start px-4 py-2 text-sm transition hover:bg-slate-700"
+                    :class="notification.read ? 'text-slate-400' : 'text-white bg-slate-700/40'">
+                    <p class="font-semibold" x-text="notification.title"></p>
+                    <p class="text-xs mt-1 text-slate-400 line-clamp-2" x-show="notification.body" x-text="notification.body"></p>
+                </button>
             </template>
 
             <p class="px-4 py-3 text-sm text-slate-500" x-show="notifications.length === 0">لا توجد إشعارات</p>

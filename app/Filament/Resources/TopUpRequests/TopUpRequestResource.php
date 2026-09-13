@@ -5,17 +5,21 @@ namespace App\Filament\Resources\TopUpRequests;
 use App\Enums\TopUpRequestStatus;
 use App\Filament\Resources\TopUpRequests\Pages;
 use App\Models\TopUpRequest;
+use App\Notifications\TopUpRequestReviewed;
 use App\Services\WalletService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TopUpRequestResource extends Resource
 {
@@ -80,28 +84,57 @@ class TopUpRequestResource extends Resource
                     ->color('success')
                     ->visible(fn(TopUpRequest $record): bool => $record->status === TopUpRequestStatus::Pending)
                     ->requiresConfirmation()
+                    ->modalWidth('lg')
                     ->modalHeading('تأكيد قبول طلب الشحن')
                     ->modalDescription('سيتم إضافة المبلغ إلى محفظة المستخدم فوراً. هل أنت متأكد؟')
+                    ->schema([
+                        View::make('filament.schemas.receipt-preview')
+                            ->viewData(fn(TopUpRequest $record): array => [
+                                'url' => Storage::disk('public')->url($record->receipt_path),
+                            ]),
+                    ])
                     ->action(function (TopUpRequest $record): void {
-                        app(WalletService::class)->credit(
-                            $record->user,
-                            (float) $record->amount,
-                            'شحن محفظة عبر تحويل بنكي',
-                            $record,
-                        );
+                        $wasProcessed = DB::transaction(function () use ($record) {
+                            $locked = TopUpRequest::where('id', $record->id)
+                                ->lockForUpdate()
+                                ->first();
 
-                        $record->update([
-                            'status' => TopUpRequestStatus::Approved,
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
-                        ]);
+                            if (! $locked || $locked->status !== TopUpRequestStatus::Pending) {
+                                return false;
+                            }
 
-                        Notification::make()
-                            ->title('تم قبول طلب الشحن')
-                            ->body('تم شحن محفظتك بمبلغ ' . number_format((float) $record->amount, 2) . ' ج.س بنجاح.')
-                            ->success()
-                            ->sendToDatabase($record->user)
-                            ->broadcast($record->user);
+                            app(WalletService::class)->credit(
+                                $locked->user,
+                                (float) $locked->amount,
+                                'شحن محفظة عبر تحويل بنكي',
+                                $locked,
+                            );
+
+                            $locked->update([
+                                'status' => TopUpRequestStatus::Approved,
+                                'reviewed_by' => auth()->id(),
+                                'reviewed_at' => now(),
+                            ]);
+
+                            return true;
+                        });
+
+                        if (! $wasProcessed) {
+                            Notification::make()
+                                ->title('تم التعامل مع هذا الطلب مسبقاً')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->refresh();
+
+                        $record->user->notify(new TopUpRequestReviewed(
+                            topUpRequest: $record,
+                            title: 'تم قبول طلب الشحن',
+                            body: 'تم شحن محفظتك بمبلغ ' . number_format((float) $record->amount, 2) . ' ج.س بنجاح.',
+                        ));
                     }),
 
                 Action::make('reject')
@@ -110,27 +143,54 @@ class TopUpRequestResource extends Resource
                     ->color('danger')
                     ->visible(fn(TopUpRequest $record): bool => $record->status === TopUpRequestStatus::Pending)
                     ->requiresConfirmation()
+                    ->modalWidth('lg')
                     ->modalHeading('رفض طلب الشحن')
                     ->schema([
+                        View::make('filament.schemas.receipt-preview')
+                            ->viewData(fn(TopUpRequest $record): array => [
+                                'url' => Storage::disk('public')->url($record->receipt_path),
+                            ]),
                         Textarea::make('rejection_reason')
                             ->label('سبب الرفض')
                             ->required()
                             ->maxLength(500),
                     ])
                     ->action(function (TopUpRequest $record, array $data): void {
-                        $record->update([
-                            'status' => TopUpRequestStatus::Rejected,
-                            'rejection_reason' => $data['rejection_reason'],
-                            'reviewed_by' => auth()->id(),
-                            'reviewed_at' => now(),
-                        ]);
+                        $wasProcessed = DB::transaction(function () use ($record, $data) {
+                            $locked = TopUpRequest::where('id', $record->id)
+                                ->lockForUpdate()
+                                ->first();
 
-                        Notification::make()
-                            ->title('تم رفض طلب الشحن')
-                            ->body('سبب الرفض: ' . $data['rejection_reason'])
-                            ->danger()
-                            ->sendToDatabase($record->user)
-                            ->broadcast($record->user);
+                            if (! $locked || $locked->status !== TopUpRequestStatus::Pending) {
+                                return false;
+                            }
+
+                            $locked->update([
+                                'status' => TopUpRequestStatus::Rejected,
+                                'rejection_reason' => $data['rejection_reason'],
+                                'reviewed_by' => auth()->id(),
+                                'reviewed_at' => now(),
+                            ]);
+
+                            return true;
+                        });
+
+                        if (! $wasProcessed) {
+                            Notification::make()
+                                ->title('تم التعامل مع هذا الطلب مسبقاً')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->refresh();
+
+                        $record->user->notify(new TopUpRequestReviewed(
+                            topUpRequest: $record,
+                            title: 'تم رفض طلب الشحن',
+                            body: 'سبب الرفض: ' . $data['rejection_reason'],
+                        ));
                     }),
             ]);
     }

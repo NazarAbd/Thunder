@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TopUpRequestController extends Controller
@@ -39,10 +40,18 @@ class TopUpRequestController extends Controller
         }
 
         $validated = $request->validate([
-            'bank_account_id' => ['required', 'exists:bank_accounts,id'],
+            'bank_account_id' => [
+                'required',
+                // Previously this only checked the ID existed at all, so a
+                // crafted POST could reference a bank account that's been
+                // deactivated and no longer shows in the form. Now it must
+                // also be active, matching what create() actually displays.
+                Rule::exists('bank_accounts', 'id')->where('is_active', true),
+            ],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'receipt' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ], [
+            'bank_account_id.exists' => 'الحساب البنكي المحدد غير متاح حالياً.',
             'amount.min' => 'يجب أن يكون المبلغ أكبر من صفر.',
             'receipt.required' => 'يرجى إرفاق صورة إيصال التحويل.',
             'receipt.image' => 'يجب أن يكون الملف المرفق صورة.',

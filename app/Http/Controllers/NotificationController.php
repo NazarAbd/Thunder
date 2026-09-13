@@ -26,6 +26,12 @@ class NotificationController extends Controller
             $notificationModel->markAsRead();
         }
 
+        $topUpRequestId = $notificationModel->data['topup_request_id'] ?? null;
+
+        if ($topUpRequestId) {
+            return redirect()->route('wallet.topup.show', $topUpRequestId);
+        }
+
         return redirect()->route('wallet.index');
     }
 }

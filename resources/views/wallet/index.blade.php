@@ -1,4 +1,22 @@
 <x-layout>
+    <style>
+        [id^="topup-"]:target {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+            border-radius: 0.5rem;
+            animation: topup-highlight-fade 2.5s ease-out;
+        }
+
+        @keyframes topup-highlight-fade {
+            0% {
+                background-color: rgba(99, 102, 241, 0.18);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+    </style>
+
     <div class="max-w-4xl mx-auto space-y-6">
         <div class="flex items-center justify-between">
             <h1 class="text-3xl font-extrabold text-white">محفظتي</h1>
@@ -27,7 +45,7 @@
             @else
                 <div class="space-y-3">
                     @foreach ($topUpRequests as $request)
-                        <div class="flex items-center justify-between border border-slate-700 rounded-lg p-4">
+                        <div id="topup-{{ $request->id }}" class="flex items-center justify-between border border-slate-700 rounded-lg p-4">
                             <div>
                                 <p class="text-white font-semibold">{{ number_format($request->amount, 2) }} ج.س</p>
                                 <p class="text-slate-500 text-xs mt-1">{{ $request->created_at->format('Y-m-d H:i') }}</p>

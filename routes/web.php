@@ -19,6 +19,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
     Route::get('/wallet/topup', [TopUpRequestController::class, 'create'])->name('wallet.topup.create');
     Route::post('/wallet/topup', [TopUpRequestController::class, 'store'])->name('wallet.topup.store');
+    Route::get('/wallet/topup/{topUpRequest}', [WalletController::class, 'showTopup'])->name('wallet.topup.show');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');

@@ -16,13 +16,19 @@
                              const found = this.notifications.find(n => n.id === id);
                              return found ? found.read : false;
                          },
-                         markAsRead(id) {
-                             const found = this.notifications.find(n => n.id === id);
-                             if (! found || found.read) return;
-                             axios.post('{{ url('notifications') }}/' + id + '/read')
-                                 .then(() => { found.read = true; })
-                                 .catch(() => {});
-                         }
+                          markAsRead(id) {
+                              const found = this.notifications.find(n => n.id === id);
+                              if (! found) return;
+                              // markAsRead() is idempotent on the server, so re-clicking
+                              // an already-read item still returns its redirect target.
+                              axios.post('{{ url('notifications') }}/' + id + '/read')
+                                  .then((response) => {
+                                      found.read = true;
+                                      const redirect = response?.data?.redirect;
+                                      if (redirect) window.location.href = redirect;
+                                  })
+                                  .catch(() => {});
+                          }
                      }">
                     @foreach ($notifications as $notification)
                         <button type="button"

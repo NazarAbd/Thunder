@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,7 +19,15 @@ class NotificationController extends Controller
         return view('notifications.index', ['notifications' => $notifications]);
     }
 
-    public function read(Request $request, string $notification): RedirectResponse
+    /**
+     * Mark a notification as read, then send the user to the relevant page.
+     *
+     * Plain form posts get a normal redirect. The notification bell and the
+     * notifications page use axios, which follows redirects silently without
+     * navigating — so for JSON/XHR requests we return the target URL and let
+     * the Alpine handlers do "window.location.href = redirect".
+     */
+    public function read(Request $request, string $notification): RedirectResponse|JsonResponse
     {
         $notificationModel = $request->user()->notifications()->findOrFail($notification);
 
@@ -28,10 +37,14 @@ class NotificationController extends Controller
 
         $topUpRequestId = $notificationModel->data['topup_request_id'] ?? null;
 
-        if ($topUpRequestId) {
-            return redirect()->route('wallet.topup.show', $topUpRequestId);
+        $target = $topUpRequestId
+            ? route('wallet.topup.show', $topUpRequestId)
+            : route('wallet.index');
+
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['redirect' => $target]);
         }
 
-        return redirect()->route('wallet.index');
+        return redirect($target);
     }
 }

@@ -43,6 +43,25 @@ class TopUpRequestResource extends Resource
         return $schema->components([]);
     }
 
+    /**
+     * Resolve a public URL for the transfer receipt, or null when there is
+     * nothing to preview (no path stored, or the file was deleted from disk).
+     * The receipt-preview view renders a placeholder in that case instead of
+     * crashing the approve/reject confirmation modal.
+     */
+    private static function receiptUrl(TopUpRequest $record): ?string
+    {
+        if (empty($record->receipt_path)) {
+            return null;
+        }
+
+        if (! Storage::disk('public')->exists($record->receipt_path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($record->receipt_path);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -90,11 +109,13 @@ class TopUpRequestResource extends Resource
                     ->schema([
                         View::make('filament.schemas.receipt-preview')
                             ->viewData(fn(TopUpRequest $record): array => [
-                                'url' => Storage::disk('public')->url($record->receipt_path),
+                                'url' => self::receiptUrl($record),
                             ]),
                     ])
                     ->action(function (TopUpRequest $record): void {
-                        $wasProcessed = DB::transaction(function () use ($record) {
+                        $reviewerId = auth()->id();
+
+                        $wasProcessed = DB::transaction(function () use ($record, $reviewerId) {
                             $locked = TopUpRequest::where('id', $record->id)
                                 ->lockForUpdate()
                                 ->first();
@@ -103,8 +124,17 @@ class TopUpRequestResource extends Resource
                                 return false;
                             }
 
+                            // The request row survives on restrict, but the user itself
+                            // may be gone (or the relation otherwise unresolvable).
+                            // Skip the credit rather than calling credit() on null.
+                            $user = $locked->user;
+
+                            if (! $user) {
+                                return false;
+                            }
+
                             app(WalletService::class)->credit(
-                                $locked->user,
+                                $user,
                                 (float) $locked->amount,
                                 'شحن محفظة عبر تحويل بنكي',
                                 $locked,
@@ -112,7 +142,7 @@ class TopUpRequestResource extends Resource
 
                             $locked->update([
                                 'status' => TopUpRequestStatus::Approved,
-                                'reviewed_by' => auth()->id(),
+                                'reviewed_by' => $reviewerId,
                                 'reviewed_at' => now(),
                             ]);
 
@@ -130,11 +160,17 @@ class TopUpRequestResource extends Resource
 
                         $record->refresh();
 
-                        $record->user->notify(new TopUpRequestReviewed(
-                            topUpRequest: $record,
-                            title: 'تم قبول طلب الشحن',
-                            body: 'تم شحن محفظتك بمبلغ ' . number_format((float) $record->amount, 2) . ' ج.س بنجاح.',
-                        ));
+                        // Notify only when the user still exists; the status update
+                        // above is already committed and must not fail because of this.
+                        $user = $record->user;
+
+                        if ($user) {
+                            $user->notify(new TopUpRequestReviewed(
+                                topUpRequest: $record,
+                                title: 'تم قبول طلب الشحن',
+                                body: 'تم شحن محفظتك بمبلغ ' . number_format((float) $record->amount, 2) . ' ج.س بنجاح.',
+                            ));
+                        }
                     }),
 
                 Action::make('reject')
@@ -148,7 +184,7 @@ class TopUpRequestResource extends Resource
                     ->schema([
                         View::make('filament.schemas.receipt-preview')
                             ->viewData(fn(TopUpRequest $record): array => [
-                                'url' => Storage::disk('public')->url($record->receipt_path),
+                                'url' => self::receiptUrl($record),
                             ]),
                         Textarea::make('rejection_reason')
                             ->label('سبب الرفض')
@@ -156,7 +192,9 @@ class TopUpRequestResource extends Resource
                             ->maxLength(500),
                     ])
                     ->action(function (TopUpRequest $record, array $data): void {
-                        $wasProcessed = DB::transaction(function () use ($record, $data) {
+                        $reviewerId = auth()->id();
+
+                        $wasProcessed = DB::transaction(function () use ($record, $data, $reviewerId) {
                             $locked = TopUpRequest::where('id', $record->id)
                                 ->lockForUpdate()
                                 ->first();
@@ -168,7 +206,7 @@ class TopUpRequestResource extends Resource
                             $locked->update([
                                 'status' => TopUpRequestStatus::Rejected,
                                 'rejection_reason' => $data['rejection_reason'],
-                                'reviewed_by' => auth()->id(),
+                                'reviewed_by' => $reviewerId,
                                 'reviewed_at' => now(),
                             ]);
 
@@ -186,11 +224,17 @@ class TopUpRequestResource extends Resource
 
                         $record->refresh();
 
-                        $record->user->notify(new TopUpRequestReviewed(
-                            topUpRequest: $record,
-                            title: 'تم رفض طلب الشحن',
-                            body: 'سبب الرفض: ' . $data['rejection_reason'],
-                        ));
+                        // Same guard as approve: rejection is committed, the
+                        // notification is best-effort when the user still exists.
+                        $user = $record->user;
+
+                        if ($user) {
+                            $user->notify(new TopUpRequestReviewed(
+                                topUpRequest: $record,
+                                title: 'تم رفض طلب الشحن',
+                                body: 'سبب الرفض: ' . $data['rejection_reason'],
+                            ));
+                        }
                     }),
             ]);
     }

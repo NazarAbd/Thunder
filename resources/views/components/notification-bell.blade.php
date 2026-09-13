@@ -17,11 +17,17 @@
             return '{{ url('notifications') }}/' + id + '/read';
         },
         markAsRead(notification) {
-            if (notification.read) return;
+            if (! notification) return;
+            // Server marks read idempotently and returns the deep-link target,
+            // so this works for both unread and already-read items.
             axios.post(this.readUrl(notification.id))
-                .then(() => {
-                    notification.read = true;
-                    if (this.unreadCount > 0) this.unreadCount--;
+                .then((response) => {
+                    if (! notification.read) {
+                        notification.read = true;
+                        if (this.unreadCount > 0) this.unreadCount--;
+                    }
+                    const redirect = response?.data?.redirect;
+                    if (redirect) window.location.href = redirect;
                 })
                 .catch(() => {});
         },

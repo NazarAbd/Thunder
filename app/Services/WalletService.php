@@ -112,4 +112,3 @@ class WalletService
         }
     }
 }
-resources / views / filament / schemas

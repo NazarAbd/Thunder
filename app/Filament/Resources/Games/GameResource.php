@@ -30,7 +30,7 @@ class GameResource extends Resource
 {
     protected static ?string $model = Game::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-puzzle-piece';
 
     protected static ?string $navigationLabel = 'الألعاب والخدمات';
 

@@ -25,7 +25,7 @@ class TopUpRequestResource extends Resource
 {
     protected static ?string $model = TopUpRequest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-library';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?string $navigationLabel = 'طلبات الشحن';
 

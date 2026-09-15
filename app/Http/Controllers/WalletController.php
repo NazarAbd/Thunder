@@ -15,6 +15,11 @@ class WalletController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+
+        // Opening the wallet marks everything as read (never deleted).
+        // Clearing (deleting) is only ever manual via the bell dropdown.
+        $user->unreadNotifications()->update(['read_at' => now()]);
+
         $wallet = $this->walletService->walletFor($user);
 
         $topUpRequests = $user->topUpRequests()

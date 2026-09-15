@@ -31,6 +31,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            // Blue-square style + auto-scroll for ?highlight={id} deep-links.
+            // Read state is never touched here — admin notifications stay
+            // unread until manually cleared (pending requests must not look handled).
+            ->renderHook('panels::body.end', fn (): string => view('filament.hooks.topup-highlight')->render())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

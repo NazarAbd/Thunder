@@ -9,6 +9,7 @@
             'id' => $n->id,
             'title' => $n->data['title'] ?? 'إشعار',
             'body' => $n->data['body'] ?? null,
+            'time' => $n->created_at?->diffForHumans(),
             'read' => ! is_null($n->read_at),
         ])),
         unreadCount: {{ $unreadCount }},
@@ -31,6 +32,24 @@
                 })
                 .catch(() => {});
         },
+        markAllRead() {
+            axios.post('{{ route('notifications.readAll') }}')
+                .then(() => {
+                    this.notifications.forEach(n => n.read = true);
+                    this.unreadCount = 0;
+                })
+                .catch(() => {});
+        },
+        clearAll() {
+            // Manual only: removes items from the dropdown (deletes rows).
+            // Auto-open of wallet marks as read but never deletes.
+            axios.delete('{{ route('notifications.clear') }}')
+                .then(() => {
+                    this.notifications = [];
+                    this.unreadCount = 0;
+                })
+                .catch(() => {});
+        },
         listen() {
             if (this.listening || ! window.Echo) return;
             this.listening = true;
@@ -40,6 +59,7 @@
                         id: notification.id,
                         title: notification.title ?? 'إشعار',
                         body: notification.body ?? null,
+                        time: 'الآن',
                         read: false,
                     });
                     if (this.notifications.length > 5) this.notifications.pop();
@@ -60,13 +80,36 @@
         </x-slot>
 
         <x-slot name="content">
+            <div class="flex items-center justify-between px-4 py-2 border-b border-slate-700">
+                <p class="text-sm font-bold text-white">الإشعارات
+                    <span x-show="unreadCount > 0" class="ms-1 text-[10px] bg-indigo-500/20 text-indigo-300 rounded-full px-2 py-0.5" x-text="unreadCount"></span>
+                </p>
+                <div class="flex items-center gap-3">
+                    <button type="button" @click="markAllRead()"
+                        class="text-[11px] text-indigo-400 hover:text-indigo-300">
+                        تحديد الكل كمقروء
+                    </button>
+                    <button type="button" @click="clearAll()"
+                        class="text-[11px] text-rose-400 hover:text-rose-300">
+                        مسح
+                    </button>
+                </div>
+            </div>
+
             <template x-for="notification in notifications" :key="notification.id">
                 <button type="button"
                     @click="markAsRead(notification)"
-                    class="w-full text-start px-4 py-2 text-sm transition hover:bg-slate-700"
+                    class="w-full text-start px-4 py-3 text-sm transition border-b border-slate-700/50 last:border-0 hover:bg-slate-700"
                     :class="notification.read ? 'text-slate-400' : 'text-white bg-slate-700/40'">
-                    <p class="font-semibold" x-text="notification.title"></p>
-                    <p class="text-xs mt-1 text-slate-400 line-clamp-2" x-show="notification.body" x-text="notification.body"></p>
+                    <span class="flex items-start gap-2">
+                        <span class="mt-1.5 w-2 h-2 rounded-full shrink-0"
+                            :class="notification.read ? 'bg-slate-600' : 'bg-indigo-400'"></span>
+                        <span class="flex-1">
+                            <span class="font-semibold block" x-text="notification.title"></span>
+                            <span class="text-xs mt-1 text-slate-400 block whitespace-normal" x-show="notification.body" x-text="notification.body"></span>
+                            <span class="text-[11px] mt-1 text-slate-500 block" x-show="notification.time" x-text="notification.time"></span>
+                        </span>
+                    </span>
                 </button>
             </template>
 

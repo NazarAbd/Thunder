@@ -35,7 +35,18 @@
                     name="كلاش أوف كلانس"
                     description="شحن الجواهر والعروض الخاصة بكلاش أوف كلانس."
                     image="{{ asset('images/games/clash of clans.jpg') }}"
+                    :href="route('games.show', 'clash-of-clans')"
                 />
+                {{-- Admin-added games (DB). Hardcoded cards above stay untouched;
+                     slugs already hardcoded are excluded in PageController to avoid dupes. --}}
+                @foreach(($dbGames['direct'] ?? collect()) as $dbGame)
+                    <x-game-card
+                        :name="$dbGame->name"
+                        :description="$dbGame->description ?? ''"
+                        :image="$dbGame->image_url"
+                        :href="route('games.show', $dbGame->slug)"
+                    />
+                @endforeach
             </div>
         </section>
 
@@ -69,6 +80,15 @@
                     description="شحن عملات ماين كرافت وتفعيل الاشتراكات."
                     image="https://placehold.co/500x300/1e293b/ffffff?text=Minecraft"
                 />
+                {{-- Admin-added games (DB). --}}
+                @foreach(($dbGames['account'] ?? collect()) as $dbGame)
+                    <x-game-card
+                        :name="$dbGame->name"
+                        :description="$dbGame->description ?? ''"
+                        :image="$dbGame->image_url"
+                        :href="route('games.show', $dbGame->slug)"
+                    />
+                @endforeach
             </div>
         </section>
 
@@ -102,6 +122,15 @@
                     description="اشتراك Spotify Premium بدون إعلانات."
                     image="https://placehold.co/500x300/1e293b/ffffff?text=Spotify"
                 />
+                {{-- Admin-added games (DB). --}}
+                @foreach(($dbGames['subscriptions'] ?? collect()) as $dbGame)
+                    <x-game-card
+                        :name="$dbGame->name"
+                        :description="$dbGame->description ?? ''"
+                        :image="$dbGame->image_url"
+                        :href="route('games.show', $dbGame->slug)"
+                    />
+                @endforeach
             </div>
         </section>
 

@@ -47,4 +47,25 @@ class NotificationController extends Controller
 
         return redirect($target);
     }
+
+    /**
+     * Mark all unread notifications as read (nothing deleted).
+     */
+    public function readAll(Request $request): JsonResponse
+    {
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Clear = remove from the bell dropdown (delete rows).
+     * Only ever called manually via the "مسح" button.
+     */
+    public function clear(Request $request): JsonResponse
+    {
+        $request->user()->notifications()->delete();
+
+        return response()->json(['ok' => true]);
+    }
 }

@@ -23,9 +23,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+    Route::delete('/notifications', [NotificationController::class, 'clear'])->name('notifications.clear');
 });
 
 Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/games/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('games.show');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 

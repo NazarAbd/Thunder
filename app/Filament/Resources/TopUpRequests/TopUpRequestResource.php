@@ -33,6 +33,8 @@ class TopUpRequestResource extends Resource
 
     protected static ?string $pluralModelLabel = 'طلبات الشحن';
 
+    protected static ?int $navigationSort = 1;
+
     public static function canCreate(): bool
     {
         return false;
@@ -87,6 +89,14 @@ class TopUpRequestResource extends Resource
                 TextColumn::make('created_at')->label('تاريخ الطلب')->dateTime('Y-m-d H:i')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
+            // Blue-square highlight for the row deep-linked from a notification
+            // (?highlight={id}). Never marks anything as read — purely visual.
+            ->recordClasses(fn ($record): array => (
+                (string) request()->query('highlight', '') !== ''
+                && (string) request()->query('highlight') === (string) $record->getKey()
+                    ? ['topup-highlight-row', 'ring-2', 'ring-blue-500', 'bg-blue-500/10']
+                    : []
+            ))
             ->filters([
                 SelectFilter::make('status')
                     ->label('الحالة')
@@ -108,8 +118,8 @@ class TopUpRequestResource extends Resource
                     ->modalDescription('سيتم إضافة المبلغ إلى محفظة المستخدم فوراً. هل أنت متأكد؟')
                     ->schema([
                         View::make('filament.schemas.receipt-preview')
-                            ->viewData(fn(TopUpRequest $record): array => [
-                                'url' => self::receiptUrl($record),
+                            ->viewData(fn ($record): array => [
+                                'url' => $record instanceof TopUpRequest ? self::receiptUrl($record) : null,
                             ]),
                     ])
                     ->action(function (TopUpRequest $record): void {
@@ -183,8 +193,8 @@ class TopUpRequestResource extends Resource
                     ->modalHeading('رفض طلب الشحن')
                     ->schema([
                         View::make('filament.schemas.receipt-preview')
-                            ->viewData(fn(TopUpRequest $record): array => [
-                                'url' => self::receiptUrl($record),
+                            ->viewData(fn ($record): array => [
+                                'url' => $record instanceof TopUpRequest ? self::receiptUrl($record) : null,
                             ]),
                         Textarea::make('rejection_reason')
                             ->label('سبب الرفض')

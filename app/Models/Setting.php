@@ -28,12 +28,13 @@ class Setting extends Model
     /**
      * SDG per 1 USD. Resolution order:
      *  1. Latest active `exchange_rates` row (admin-managed, audited).
-     *  2. Legacy `settings` key `exchange_rate` (kept as fallback).
-     *  3. config/store.php -> env default.
+     *  2. config/store.php -> env default (only when no row is active).
      *
-     * The storefront (GameController) calls this, so an admin rate change
-     * takes effect immediately with no deploy and no public exposure of
-     * the rate itself.
+     * The legacy `settings` key `exchange_rate` is intentionally NOT
+     * consulted anymore: it was a stale, UI-less override that could
+     * silently reprice the store if the active row was ever removed.
+     * The storefront (GameController, GameService) calls this, so an
+     * admin rate change takes effect immediately with no deploy.
      */
     public static function exchangeRate(): float
     {
@@ -43,6 +44,6 @@ class Setting extends Model
             return (float) $current->rate;
         }
 
-        return (float) static::get('exchange_rate', config('store.exchange_rate', 3000));
+        return (float) config('store.exchange_rate', 3000);
     }
 }

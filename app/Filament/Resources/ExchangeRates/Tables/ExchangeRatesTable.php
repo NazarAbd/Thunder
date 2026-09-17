@@ -13,9 +13,10 @@ use Filament\Tables\Table;
  * Exchange-rate history table.
  *
  * Shows the full audit trail (who set what, when). The active row is the
- * one the storefront prices from. Deletion is allowed but keep at least
- * one active row — when none is active the store falls back to the
- * settings/config default (see Setting::exchangeRate()).
+ * one the storefront prices from. The sole active row is protected by
+ * the model: it can neither be deactivated nor deleted until a
+ * replacement is activated — otherwise the store would silently fall
+ * back to the config default (see Setting::exchangeRate()).
  */
 class ExchangeRatesTable
 {

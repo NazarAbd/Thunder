@@ -7,6 +7,7 @@ use App\Filament\Resources\ExchangeRates\Pages;
 use App\Filament\Resources\ExchangeRates\Schemas\ExchangeRateForm;
 use App\Filament\Resources\ExchangeRates\Tables\ExchangeRatesTable;
 use App\Models\ExchangeRate;
+use App\Models\Setting;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -43,6 +44,20 @@ class ExchangeRateResource extends Resource
     protected static ?string $pluralModelLabel = 'أسعار الصرف';
 
     protected static ?int $navigationSort = 2;
+
+    /**
+     * Sidebar badge showing the currently effective storefront rate, so
+     * an admin can see at a glance which number customers are priced
+     * from. Cosmetic only — null (no badge) if the rate is unreadable.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        try {
+            return number_format(Setting::exchangeRate(), 2);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
 
     // -----------------------------------------------------------------
     // Authorization (defense in depth on top of panel-level admin gate).

@@ -6,10 +6,10 @@ return [
     | Site-wide exchange rate (SDG per 1 USD)
     |--------------------------------------------------------------------------
     |
-    | All game offer prices are stored in USD and converted to Sudanese
-    | pounds with this rate. The `settings` table value (key
-    | `exchange_rate`) wins when present so the admin can control it
-    | later from the dashboard without touching code.
+    | Default used ONLY when no `exchange_rates` table row is active.
+    | The admin-managed table (Filament: سعر الصرف) is the live source;
+    | this value is the last-resort fallback so the store never renders
+    | without a rate. May be overridden via EXCHANGE_RATE_SDG_PER_USD.
     |
     */
     'exchange_rate' => (float) env('EXCHANGE_RATE_SDG_PER_USD', 3000),

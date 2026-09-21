@@ -31,14 +31,7 @@
                     description="شحن جواهر موبايل ليجيندز بشكل فوري وآمن."
                     image="https://placehold.co/500x300/1e293b/ffffff?text=Mobile+Legends"
                 />
-                <x-game-card
-                    name="كلاش أوف كلانس"
-                    description="شحن الجواهر والعروض الخاصة بكلاش أوف كلانس."
-                    image="{{ asset('images/games/clash of clans.jpg') }}"
-                    :href="route('games.show', 'clash-of-clans')"
-                />
-                {{-- Admin-added games (DB). Hardcoded cards above stay untouched;
-                     slugs already hardcoded are excluded in PageController to avoid dupes. --}}
+                {{-- Admin-managed games (DB): every active `direct` game, incl. Clash of Clans. --}}
                 @foreach(($dbGames['direct'] ?? collect()) as $dbGame)
                     <x-game-card
                         :name="$dbGame->name"

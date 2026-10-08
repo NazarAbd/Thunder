@@ -26,23 +26,33 @@ class WalletService
 
     /**
      * Add money to a user's wallet and record the ledger entry.
+     *
+     * Accepts string|float|int to avoid float-precision traps: DB columns and
+     * Eloquent casts are decimal(14,2) / decimal:2, so string amounts pass
+     * through untouched. Floats are formatted to 2 decimals at the boundary.
+     *
+     * @param  string|float|int  $amount
      */
-    public function credit(User $user, float $amount, string $description, ?object $reference = null): WalletTransaction
+    public function credit(User $user, string|float|int $amount, string $description, ?object $reference = null): WalletTransaction
     {
-        if ($amount <= 0) {
+        $this->ensureNotBlocked($user);
+
+        $amountStr = $this->normalizeAmount($amount);
+
+        if (bccomp($amountStr, '0', 2) <= 0) {
             throw new RuntimeException('Credit amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($user, $amount, $description, $reference) {
+        return DB::transaction(function () use ($user, $amountStr, $description, $reference) {
             $wallet = $this->lockedWalletFor($user);
 
-            $newBalance = bcadd((string) $wallet->balance, (string) $amount, 2);
+            $newBalance = bcadd((string) $wallet->balance, $amountStr, 2);
             $wallet->update(['balance' => $newBalance]);
 
             return WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'type' => WalletTransactionType::Credit,
-                'amount' => $amount,
+                'amount' => $amountStr,
                 'balance_after' => $newBalance,
                 'description' => $description,
                 'reference_type' => $reference?->getMorphClass(),
@@ -55,33 +65,69 @@ class WalletService
      * Subtract money from a user's wallet and record the ledger entry.
      * Not wired to any feature yet (no purchase flow in this phase), but built now
      * so the next phase (spending wallet balance on a real order) has a safe primitive to call.
+     *
+     * @param  string|float|int  $amount
      */
-    public function debit(User $user, float $amount, string $description, ?object $reference = null): WalletTransaction
+    public function debit(User $user, string|float|int $amount, string $description, ?object $reference = null): WalletTransaction
     {
-        if ($amount <= 0) {
+        $this->ensureNotBlocked($user);
+
+        $amountStr = $this->normalizeAmount($amount);
+
+        if (bccomp($amountStr, '0', 2) <= 0) {
             throw new RuntimeException('Debit amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($user, $amount, $description, $reference) {
+        return DB::transaction(function () use ($user, $amountStr, $description, $reference) {
             $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
 
-            if (! $wallet || bccomp((string) $wallet->balance, (string) $amount, 2) < 0) {
+            if (! $wallet || bccomp((string) $wallet->balance, $amountStr, 2) < 0) {
                 throw new RuntimeException('Insufficient wallet balance.');
             }
 
-            $newBalance = bcsub((string) $wallet->balance, (string) $amount, 2);
+            $newBalance = bcsub((string) $wallet->balance, $amountStr, 2);
             $wallet->update(['balance' => $newBalance]);
 
             return WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'type' => WalletTransactionType::Debit,
-                'amount' => $amount,
+                'amount' => $amountStr,
                 'balance_after' => $newBalance,
                 'description' => $description,
                 'reference_type' => $reference?->getMorphClass(),
                 'reference_id' => $reference?->getKey(),
             ]);
         });
+    }
+
+    /**
+     * Frozen accounts cannot move money in either direction.
+     */
+    private function ensureNotBlocked(User $user): void
+    {
+        if ($user->isBlocked()) {
+            throw new RuntimeException('الحساب موقوف. تواصل مع الدعم عبر واتساب.');
+        }
+    }
+
+    /**
+     * Normalize a money input to a "1234.56" string without float drift.
+     * Strings (e.g. Eloquent decimal:2 casts) pass through via bcadd;
+     * floats/ints are formatted to exactly 2 decimals at the boundary.
+     */
+    private function normalizeAmount(string|float|int $amount): string
+    {
+        if (is_float($amount) || is_int($amount)) {
+            return number_format((float) $amount, 2, '.', '');
+        }
+
+        $trimmed = trim($amount);
+
+        if ($trimmed === '' || ! is_numeric($trimmed)) {
+            throw new RuntimeException('Amount must be numeric.');
+        }
+
+        return bcadd($trimmed, '0', 2);
     }
 
     /**

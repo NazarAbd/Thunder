@@ -16,22 +16,8 @@
             </div>
 
             <div class="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <x-game-card
-                    name="ببجي موبايل"
-                    description="شحن شدات ببجي موبايل مباشرة عبر معرف اللاعب."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=PUBG"
-                />
-                <x-game-card
-                    name="فري فاير"
-                    description="شحن جواهر فري فاير مباشرة وبأسعار منافسة."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Free+Fire"
-                />
-                <x-game-card
-                    name="موبايل ليجيندز"
-                    description="شحن جواهر موبايل ليجيندز بشكل فوري وآمن."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Mobile+Legends"
-                />
-                {{-- Admin-managed games (DB): every active `direct` game, incl. Clash of Clans. --}}
+                {{-- Admin-managed games (DB). Cards without an uploaded image
+                     render their name (alt) until the owner adds a picture. --}}
                 @foreach(($dbGames['direct'] ?? collect()) as $dbGame)
                     <x-game-card
                         :name="$dbGame->name"
@@ -53,27 +39,7 @@
             </div>
 
             <div class="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <x-game-card
-                    name="فالورانت"
-                    description="شحن نقاط فالورانت مباشرة عبر حسابك."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Valorant"
-                />
-                <x-game-card
-                    name="ليج أوف ليجيندز"
-                    description="شحن RP للعبة ليج أوف ليجيندز عبر تسجيل الدخول."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=LoL"
-                />
-                <x-game-card
-                    name="روبلوکس"
-                    description="شحن Robux مباشرة عبر حسابك الشخصي."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Roblox"
-                />
-                <x-game-card
-                    name="ماين كرافت"
-                    description="شحن عملات ماين كرافت وتفعيل الاشتراكات."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Minecraft"
-                />
-                {{-- Admin-added games (DB). --}}
+                {{-- Admin-managed games (DB). --}}
                 @foreach(($dbGames['account'] ?? collect()) as $dbGame)
                     <x-game-card
                         :name="$dbGame->name"
@@ -95,27 +61,7 @@
             </div>
 
             <div class="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <x-game-card
-                    name="ChatGPT Plus"
-                    description="اشتراك شهري في ChatGPT Plus بأحدث النماذج."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=ChatGPT"
-                />
-                <x-game-card
-                    name="Gemini Advanced"
-                    description="اشتراك Gemini Advanced بميزات الذكاء الاصطناعي المتقدمة."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Gemini"
-                />
-                <x-game-card
-                    name="نتفليكس (Netflix)"
-                    description="اشتراكات شهرية وسنوية بأعلى جودة 4K Ultra HD."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Netflix"
-                />
-                <x-game-card
-                    name="سبوتيفاي (Spotify)"
-                    description="اشتراك Spotify Premium بدون إعلانات."
-                    image="https://placehold.co/500x300/1e293b/ffffff?text=Spotify"
-                />
-                {{-- Admin-added games (DB). --}}
+                {{-- Admin-managed games (DB). --}}
                 @foreach(($dbGames['subscriptions'] ?? collect()) as $dbGame)
                     <x-game-card
                         :name="$dbGame->name"

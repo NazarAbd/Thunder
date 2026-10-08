@@ -9,10 +9,22 @@
                 <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                     <i class="fa-brands fa-whatsapp text-xl"></i>
                 </div>
-                <div>
+                <div class="flex-1">
                     <p class="text-xs text-slate-400">واتساب الدعم الفني</p>
-                    <p class="font-semibold">+1234567890</p>
+                    @php($wa = config('store.whatsapp'))
+                    @if(!empty($wa))
+                        <a href="https://wa.me/{{ $wa }}" target="_blank" rel="noopener"
+                           class="font-semibold text-emerald-400 hover:text-emerald-300 transition" dir="ltr">+{{ $wa }}</a>
+                    @else
+                        <p class="font-semibold">+1234567890</p>
+                    @endif
                 </div>
+                @if(!empty($wa))
+                    <a href="https://wa.me/{{ $wa }}" target="_blank" rel="noopener"
+                       class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition shrink-0">
+                        <i class="fa-brands fa-whatsapp"></i> راسلنا
+                    </a>
+                @endif
             </div>
             <div class="flex items-center gap-3 text-slate-300">
                 <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
@@ -20,7 +32,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-slate-400">البريد الإلكتروني</p>
-                    <p class="font-semibold">support@example.com</p>
+                    <p class="font-semibold">{{ config('store.support_email') }}</p>
                 </div>
             </div>
         </div>

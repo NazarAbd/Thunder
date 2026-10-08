@@ -21,6 +21,10 @@ class TopUpRequestController extends Controller
     {
         $user = Auth::user();
 
+        if ($user->isBlocked()) {
+            return redirect()->route('account.frozen');
+        }
+
         if ($this->hasPendingRequest($user)) {
             return redirect()->route('wallet.index')
                 ->with('status', 'لديك بالفعل طلب شحن قيد المراجعة. يرجى الانتظار حتى تتم مراجعته قبل إرسال طلب جديد.');
@@ -34,6 +38,10 @@ class TopUpRequestController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $user = Auth::user();
+
+        if ($user->isBlocked()) {
+            return redirect()->route('account.frozen');
+        }
 
         if ($this->hasPendingRequest($user)) {
             return redirect()->route('wallet.index')

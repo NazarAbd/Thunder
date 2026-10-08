@@ -5,10 +5,12 @@ namespace App\Filament\Resources\TopUpRequests;
 use App\Enums\TopUpRequestStatus;
 use App\Filament\Resources\TopUpRequests\Pages;
 use App\Models\TopUpRequest;
+use App\Models\User;
 use App\Notifications\TopUpRequestReviewed;
 use App\Services\WalletService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -18,6 +20,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -69,6 +72,11 @@ class TopUpRequestResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('user.name')->label('المستخدم')->searchable(),
+                TextColumn::make('user.status')
+                    ->label('حالة الحساب')
+                    ->badge()
+                    ->color(fn ($state): string => $state ? 'success' : 'danger')
+                    ->formatStateUsing(fn ($state): string => $state ? 'نشط' : 'موقوف'),
                 TextColumn::make('bankAccount.bank_name')->label('البنك'),
                 TextColumn::make('amount')->label('المبلغ')->money('SDG')->sortable(),
                 ImageColumn::make('receipt_path')
@@ -145,7 +153,7 @@ class TopUpRequestResource extends Resource
 
                             app(WalletService::class)->credit(
                                 $user,
-                                (float) $locked->amount,
+                                (string) $locked->amount,
                                 'شحن محفظة عبر تحويل بنكي',
                                 $locked,
                             );
@@ -245,6 +253,52 @@ class TopUpRequestResource extends Resource
                                 body: 'سبب الرفض: ' . $data['rejection_reason'],
                             ));
                         }
+                    }),
+
+                Action::make('blockUser')
+                    ->label('حظر المستخدم')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('حظر المستخدم وتجميد محفظته؟')
+                    ->modalDescription('لن يتمكن من إجراء أي عملية حتى يتواصل مع الدعم عبر واتساب.')
+                    ->visible(fn (TopUpRequest $record): bool => $record->user !== null && $record->user->isActive())
+                    ->action(function (TopUpRequest $record): void {
+                        $record->user?->update(['status' => false]);
+                        Notification::make()->title('تم حظر المستخدم وتجميد محفظته')->danger()->send();
+                    }),
+
+                Action::make('unblockUser')
+                    ->label('فك الحظر')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('فك حظر المستخدم؟')
+                    ->modalDescription('سيتمكن من استخدام محفظته مجدداً.')
+                    ->visible(fn (TopUpRequest $record): bool => $record->user !== null && $record->user->isBlocked())
+                    ->action(function (TopUpRequest $record): void {
+                        $record->user?->update(['status' => true]);
+                        Notification::make()->title('تم فك حظر المستخدم')->success()->send();
+                    }),
+            ])
+            ->bulkActions([
+                BulkAction::make('blockUsers')
+                    ->label('حظر المستخدمين المحددين')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records): void {
+                        User::whereIn('id', $records->pluck('user_id')->unique())->update(['status' => false]);
+                        Notification::make()->title('تم حظر المستخدمين وتجميد محافظهم')->danger()->send();
+                    }),
+                BulkAction::make('unblockUsers')
+                    ->label('فك حظر المستخدمين المحددين')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records): void {
+                        User::whereIn('id', $records->pluck('user_id')->unique())->update(['status' => true]);
+                        Notification::make()->title('تم فك حظر المستخدمين')->success()->send();
                     }),
             ]);
     }

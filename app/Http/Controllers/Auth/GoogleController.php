@@ -18,28 +18,64 @@ class GoogleController extends Controller
      */
     public function redirect(): RedirectResponse
     {
+        if (empty(config('services.google.client_id'))) {
+            abort(404);
+        }
+
         return Socialite::driver('google')->redirect();
     }
 
     /**
      * Google sends the user back here after they approve access.
      * We match them to an existing account by email, or create a new one.
+     * Google emails are verified, so matching by email is safe.
      */
     public function callback(): RedirectResponse
     {
-        $googleUser = Socialite::driver('google')->user();
+        if (empty(config('services.google.client_id'))) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'تسجيل الدخول عبر Google غير مفعّل.',
+            ]);
+        }
+
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.',
+            ]);
+        }
+
+        $email = strtolower(trim((string) $googleUser->getEmail()));
+
+        if ($email === '') {
+            return redirect()->route('login')->withErrors([
+                'email' => 'تعذّر الحصول على البريد الإلكتروني من Google.',
+            ]);
+        }
+
+        $name = trim((string) ($googleUser->getName() ?? $googleUser->getNickname() ?? ''));
+        if ($name === '') {
+            $name = strstr($email, '@', true) ?: $email;
+        }
 
         $user = User::firstOrCreate(
-            ['email' => $googleUser->getEmail()],
+            ['email' => $email],
             [
-                'name' => $googleUser->getName() ?? $googleUser->getNickname(),
+                'name' => $name,
                 // Random password: they'll never use it, since they log in via Google.
                 'password' => Hash::make(Str::random(32)),
                 'email_verified_at' => now(),
             ]
         );
 
+        // Google already verified this email; backfill legacy rows.
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+
         Auth::login($user, remember: true);
+        request()->session()->regenerate();
 
         return redirect()->intended('/');
     }

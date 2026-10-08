@@ -13,4 +13,17 @@ return [
     |
     */
     'exchange_rate' => (float) env('EXCHANGE_RATE_SDG_PER_USD', 3000),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Support channels
+    |--------------------------------------------------------------------------
+    |
+    | WhatsApp number in international format WITHOUT "+" (e.g. 2499XXXXXXX).
+    | Empty = WhatsApp buttons hidden. Shown on /contact, the frozen-account
+    | notice and the floating button on every page.
+    |
+    */
+    'whatsapp' => env('SUPPORT_WHATSAPP', ''),
+    'support_email' => env('SUPPORT_EMAIL', 'support@example.com'),
 ];

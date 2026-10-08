@@ -5,9 +5,21 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TopUpRequestController;
 use App\Http\Controllers\WalletController;
+use App\Http\Middleware\EnsureAccountIsActive;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
+    // Frozen notice: reachable by blocked users, active users bounce home.
+    Route::get('/account/frozen', function () {
+        if (auth()->user()->isActive()) {
+            return redirect()->route('home');
+        }
+
+        return view('account.frozen');
+    })->name('account.frozen');
+});
+
+Route::middleware(['auth', EnsureAccountIsActive::class])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

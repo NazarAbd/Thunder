@@ -29,7 +29,9 @@ class User extends Authenticatable implements FilamentUser
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
+        'status',
     ];
 
     /**
@@ -53,7 +55,22 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'status' => 'boolean',
         ];
+    }
+
+    /**
+     * Blocked (frozen) accounts cannot use the wallet or place new requests.
+     * status=true (default) = active, status=false = blocked.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->status === false;
+    }
+
+    public function isActive(): bool
+    {
+        return ! $this->isBlocked();
     }
 
     /**

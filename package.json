@@ -19,5 +19,8 @@
         "pusher-js": "^8.6.0",
         "tailwindcss": "^4.3.3",
         "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "@neon/config": "^1.8.6"
     }
 }

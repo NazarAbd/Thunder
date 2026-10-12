@@ -1,0 +1,48 @@
+# $0 free-tier deploy for Thunder (Albarq) on Render + Neon Postgres.
+# - No worker, no Redis, no Reverb, no managed DB: all incompatible with free tier.
+# - App sends notifications sync (see TopUpRequestController), broadcast=log persists DB rows.
+# - Storage is ephemeral on free (receipts vanish on sleep/restart): MVP-ok, move `s3` disk to
+#   Supabase Storage / Cloudflare R2 later.
+# Steps:
+#   1. Create free Postgres at neon.tech, copy the connection string (sslmode=require).
+#   2. Push this repo to GitHub, New > Web Service > select repo > Render reads this file.
+#   3. Set DB_URL + APP_KEY + APP_URL in the Render dashboard (marked sync: false below).
+#   4. After first deploy, run once in Render Shell:
+#        php artisan migrate --force && php artisan storage:link && php artisan config:cache
+services:
+  - type: web
+    name: thunder
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_NAME
+        value: Albarq
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        sync: false
+      - key: APP_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        sync: false
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: BROADCAST_CONNECTION
+        value: log
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MAIL_MAILER
+        value: log

@@ -51,10 +51,11 @@ return [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
+            'region' => env('AWS_DEFAULT_REGION', env('AWS_REGION', 'us-east-1')),
             'bucket' => env('AWS_BUCKET'),
             'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
+            // Neon `neon deploy` pulls AWS_ENDPOINT_URL_S3; R2/Supabase use AWS_ENDPOINT.
+            'endpoint' => env('AWS_ENDPOINT', env('AWS_ENDPOINT_URL_S3')),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,

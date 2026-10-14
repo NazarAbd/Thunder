@@ -46,3 +46,5 @@ services:
         value: local
       - key: MAIL_MAILER
         value: log
+      - key: PORT
+        value: 10000

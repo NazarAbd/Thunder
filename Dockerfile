@@ -26,6 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Apache must serve Laravel's public/ directory.
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+# Render injects PORT=10000 and scans it; Apache defaults to 80 (invisible → "No open ports").
+ENV PORT=10000
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
@@ -42,5 +44,5 @@ RUN composer dump-autoload --optimize \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-EXPOSE 80
-CMD ["apache2-foreground"]
+EXPOSE 10000
+CMD ["sh", "-c", "sed -i \"s/Listen 80/Listen ${PORT:-10000}/\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT:-10000}>/\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"]

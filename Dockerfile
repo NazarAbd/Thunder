@@ -19,8 +19,8 @@ WORKDIR /var/www/html
 # System deps + PHP extensions required by Laravel 12 + bcmath (WalletService).
 # $0 free tier: Neon/Supabase Postgres needs pdo_pgsql; keep pdo_mysql for local XAMPP compat.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev \
-    && docker-php-ext-install pdo_mysql pdo_pgsql bcmath mbstring zip exif pcntl \
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev libpq-dev libicu-dev \
+    && docker-php-ext-install pdo_mysql pdo_pgsql bcmath mbstring zip exif pcntl intl \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 

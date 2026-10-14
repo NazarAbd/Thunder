@@ -45,6 +45,7 @@ RUN composer dump-autoload --optimize \
     && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
-# TEMPORARY one-time use: fresh (prod DB is half-migrated, zero real data).
-# Revert to `migrate --force` immediately after this deploy goes green.
-CMD ["sh", "-c", "php artisan migrate:fresh --force && (php artisan storage:link || true) && php artisan config:cache && sed -i \"s/Listen 80/Listen ${PORT:-10000}/\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT:-10000}>/\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"]
+# Free tier has no Shell and no pre-deploy command: migrate at boot instead.
+# Single instance only, so no concurrent-migrate risk. Seeds run inside migrations.
+# NEVER use migrate:fresh here: every sleep/wake restart would wipe prod data.
+CMD ["sh", "-c", "php artisan migrate --force && (php artisan storage:link || true) && php artisan config:cache && sed -i \"s/Listen 80/Listen ${PORT:-10000}/\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT:-10000}>/\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"]

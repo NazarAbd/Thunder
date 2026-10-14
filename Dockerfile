@@ -6,7 +6,7 @@
 FROM node:20-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci && npm install --no-save @rollup/rollup-linux-x64-musl
+RUN npm ci && npm install --no-save @rollup/rollup-linux-x64-musl lightningcss-linux-x64-musl @tailwindcss/oxide-linux-x64-musl
 COPY resources resources
 COPY vite.config.js ./
 COPY public public
